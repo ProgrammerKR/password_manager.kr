@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+        .password-list {
+            margin-top: 20px;
+        }
+        .password-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            position: relative;
+            background: #f9f9f9;
+        }
+        .password-item button {
+            background-color: #dc3545;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .password-item button.show-btn {
+            background-color: #28a745;
+        }
+        .password-item button.show-btn:hover {
+            background-color: #218838;
+        }
+        .password-item button:hover {
+            background-color: #c82333;
+        }
+        .password-details {
+            display: none;
+            margin-left: 10px;
+        }
+        .password-item .show-btn.showing {
+            background-color: #007bff;
+        }
+        .password-item .show-btn.showing:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="signupContainer">
+        <h1>Signup</h1>
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="signupUsername">Username:</label>
+                <input type="text" id="signupUsername" required>
+            </div>
+            <div class="form-group">
+                <label for="signupPassword">Password:</label>
+                <input type="password" id="signupPassword" required>
+            </div>
+            <button type="submit">Sign Up</button>
+        </form>
+        <p>Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+    </div>
+
+    <div class="container hidden" id="loginContainer">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">Username:</label>
+                <input type="text" id="loginUsername" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password:</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="#" onclick="showSignup()">Sign up here</a></p>
+    </div>
+
+    <div class="container hidden" id="passwordManagerContainer">
+        <h1>Password Manager</h1>
+        <form id="passwordForm">
+            <div class="form-group">
+                <label for="siteName">Site Name:</label>
+                <input type="text" id="siteName" required>
+            </div>
+            <div class="form-group">
+                <label for="sitePassword">Password:</label>
+                <input type="password" id="sitePassword" required>
+            </div>
+            <button type="submit">Add Password</button>
+        </form>
+        <div class="password-list" id="passwordList">
+            <!-- Password items will be added here -->
+        </div>
+    </div>
+
+    <script>
+        // Utility function to get item from localStorage
+        function getStorageItem(key) {
+            return JSON.parse(localStorage.getItem(key)) || [];
+        }
+
+        // Utility function to set item in localStorage
+        function setStorageItem(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // Show or hide elements based on authentication state
+        function showPasswordManager() {
+            document.getElementById('signupContainer').classList.add('hidden');
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('passwordManagerContainer').classList.remove('hidden');
+            renderPasswordList();
+        }
+
+        function showSignup() {
+            document.getElementById('signupContainer').classList.remove('hidden');
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('passwordManagerContainer').classList.add('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('signupContainer').classList.add('hidden');
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('passwordManagerContainer').classList.add('hidden');
+        }
+
+        // Handle signup
+        document.getElementById('signupForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+            let users = getStorageItem('users');
+            if (users.find(user => user.username === username)) {
+                alert('Username already exists');
+                return;
+            }
+            users.push({ username, password });
+            setStorageItem('users', users);
+            showLogin();
+        });
+
+        // Handle login
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const users = getStorageItem('users');
+            const user = users.find(user => user.username === username && user.password === password);
+            if (user) {
+                showPasswordManager();
+            } else {
+                alert('Invalid username or password');
+            }
+        });
+
+        // Render password list
+        function renderPasswordList() {
+            const passwordList = document.getElementById('passwordList');
+            passwordList.innerHTML = '';
+            const passwords = getStorageItem('passwords');
+            passwords.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'password-item';
+                div.innerHTML = `
+                    <span>${item.siteName}: <span id="password-${index}" class="password-details"> ${'*'.repeat(item.sitePassword.length)}</span></span>
+                    <button class="show-btn" onclick="togglePassword(${index}, this)">Show</button>
+                    <button onclick="removePassword(${index})">Remove</button>
+                `;
+                passwordList.appendChild(div);
+            });
+        }
+
+        // Toggle password visibility
+        function togglePassword(index, button) {
+            const passwordDetails = document.getElementById(`password-${index}`);
+            if (passwordDetails.style.display === 'none') {
+                passwordDetails.style.display = 'inline';
+                passwordDetails.textContent = getStorageItem('passwords')[index].sitePassword;
+                button.textContent = 'Hide';
+                button.classList.add('showing');
+            } else {
+                passwordDetails.style.display = 'none';
+                passwordDetails.textContent = '*'.repeat(getStorageItem('passwords')[index].sitePassword.length);
+                button.textContent = 'Show';
+                button.classList.remove('showing');
+            }
+        }
+
+        // Add password
+        function addPassword(siteName, sitePassword) {
+            const passwords = getStorageItem('passwords');
+            passwords.push({ siteName, sitePassword });
+            setStorageItem('passwords', passwords);
+            renderPasswordList();
+        }
+
+        // Remove password
+        function removePassword(index) {
+            const passwords = getStorageItem('passwords');
+            passwords.splice(index, 1);
+            setStorageItem('passwords', passwords);
+            renderPasswordList();
+        }
+
+        // Handle password addition
+        document.getElementById('passwordForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const siteName = document.getElementById('siteName').value;
+            const sitePassword = document.getElementById('sitePassword').value;
+            addPassword(siteName, sitePassword);
+            document.getElementById('siteName').value = '';
+            document.getElementById('sitePassword').value = '';
+        });
+
+        // Initial setup
+        if (getStorageItem('users').length === 0) {
+            showSignup();
+        } else {
+            showLogin();
+        }
+    </script>
+</body>
+</html>
